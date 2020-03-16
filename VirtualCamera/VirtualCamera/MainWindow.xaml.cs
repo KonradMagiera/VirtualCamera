@@ -21,22 +21,41 @@ namespace VirtualCamera
     public partial class MainWindow : Window
     {
         private Camera Cam { get; set; }
-        private Matrix4x4 translationMatrix;
-        private float TransformStep = 10f;
-        private float TransformZStep = 2f;
-        private float TransX { get; set; }
-        private float TransY { get; set; }
-        private float TransZ { get; set; }
+        private Matrix4x4 Perspective { get; set; }
+        private Matrix3x4 Cast3dto2d { get; set; }
+
+        private int a = 0;
 
         public MainWindow()
         {
             InitializeComponent();
-            List<Cube> cubes = FileHandling.FileReader.ReadFile(@"D:\Polibuda\Semestr VI\Grafika\VirtualCamera\VirtualCamera\world.txt");
+            List<Cube> cubes = FileHandling.FileReader.ReadFile(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\world.txt");
             Cam = new Camera(canvas.Width, canvas.Height, cubes);
-            TransX = 0f;
-            TransY = 0f;
-            TransZ = 0f;
-            translationMatrix = Matrix4x4.Identity;
+
+            Cast3dto2d = new Matrix3x4(1, 0, 0, 0,
+                                       0, 1, 0, 0,
+                                       0, 0, 1, 0);
+
+            float angle = MathExtension.ToRadians(5); // decrease - zoomIn/ increase - zoomOut
+            angle = (float)Math.Tan(angle / 2);
+            Perspective = new Matrix4x4(1 / (Cam.AspectRatio * angle), 0, 0, 0,
+                                          0, 1 / angle, 0, 0,
+                                          0, 0, (-Cam.Near - Cam.Far) / (Cam.Near - Cam.Far), (2 * Cam.Far * Cam.Near) / (Cam.Near - Cam.Far),
+                                          0, 0, 1, 0);
+
+            //Perspective = new Matrix4x4(-1 / (Cam.AspectRatio * angle), 0, 0, 0,
+            //                              0, 1 / angle, 0, 0,
+            //                              0, 0, -((Cam.Far + Cam.Near) / (Cam.Far - Cam.Near)), -((2 * Cam.Far * Cam.Near) / (Cam.Far - Cam.Near)),
+            //                              0, 0, -1, 0);
+
+            //Perspective = new Matrix4x4(Cam.AspectRatio / (angle), 0, 0, 0,
+            //                              0, 1 / angle, 0, 0,
+            //                              0, 0, (Cam.Near + Cam.Far) / (-Cam.Near + Cam.Far), (2 * Cam.Far * Cam.Near) / (Cam.Near - Cam.Far),
+            //                              0, 0, 1, 0);
+
+
+
+
             DrawObject();
         }
 
@@ -44,60 +63,65 @@ namespace VirtualCamera
 
         private void DrawObject()
         {
-            BuildTranslationMatrix();
             canvas.Children.Clear();
-            Matrix3x4 cast3dto2d = new Matrix3x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0);
-
-            float angle = MathExtension.ToRadians(5); // decrease - zoomIn/ increase - zoomOut
-            float aspectRatio = Cam.AspectRatio;
-            angle = (float)Math.Tan(angle / 2);
-            float near = Cam.Near;
-            float far = Cam.Far;
-            
-            Matrix4x4 per = new Matrix4x4(1 / (aspectRatio * angle), 0, 0, 0, 0, 1 / angle, 0, 0, 0, 0, (-near - far) / (near - far), (2 * far * near) / (near - far), 0, 0, -1, 0);
-            //Matrix4x4 test;
-            //Matrix4x4 final;
-
+   
             foreach (Cube c in Cam.Cubes)
             {
-
                 Cube tmp_c = new Cube(c);
                 Cube2D cube2d = new Cube2D();
 
                 for (int i = 0; i < 8; i++)
                 {
-                    //Console.WriteLine($"Before {i}:{tmp_c.Points[i]}");
+                    // Console.WriteLine($"Before {i}:{tmp_c.Points[i]}");
 
                     // model - world
 
-
-                    // works almost fine but moves around some distant point; same as under rotation orientation order
-                    //test = Matrix4x4.Multiply(Cam.scaleMatrix, Cam.translationMatrix);
-                    //final = Matrix4x4.Multiply(test, Cam.rotationMatrix);
-                    // tmp_c.Points[i] = MathExtension.MatrixMultiply(final, tmp_c.Points[i]);
-
-
                     // old translate -> rotate -> scale; rotate orientation in rotate -> translate -> scale
-                    tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.translationMatrix, tmp_c.Points[i]); // translate
                     tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.rotationMatrix, tmp_c.Points[i]);  // rotate
+                    tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.translationMatrix, tmp_c.Points[i]); // translate
                     
                     tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.scaleMatrix, tmp_c.Points[i]); // scale 
 
-                    // world - view ??? dont know why it works only if not rotated more than 90 ?
-                    //tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.cameraTranslationMatrix, tmp_c.Points[i]); // translate
+
+                    // world - view 
+                    //tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.cameraTranslationMatrix, tmp_c.Points[i]);
 
                     // view - perspective
-                    tmp_c.Points[i] = MathExtension.MatrixMultiply(per, tmp_c.Points[i]); // perspective
+                    tmp_c.Points[i] = MathExtension.MatrixMultiply(Perspective, tmp_c.Points[i]); // perspective
 
+                    // TODO clipping algorithm
+                    //if (i == 2)
+                    //{
+                    //    Console.WriteLine($"{tmp_c.Points[i]}");
+                    //    if (0 < tmp_c.Points[i].W)
+                    //    {
+                    //        Console.WriteLine("Widać");
+                    //    }
+                    //    else
+                    //    {
+                    //        Console.WriteLine("Nie widać");
+                    //    }
+                    //}
                     // perspective3D to perspective2D
-                    //cast3dto2d[0, 0] = 1 / tmp_c.Points[i].Z;
-                    //cast3dto2d[1, 1] = 1 / tmp_c.Points[i].Z;
-                    //cast3dto2d[2, 2] = 1 / tmp_c.Points[i].Z;
-                    cube2d.Points[i] = MathExtension.MatrixMultiply(cast3dto2d, tmp_c.Points[i]);
+                    //if (tmp_c.Points[i].W > 0)
+                    //{
+                    //    Cast3dto2d[0, 0] = 1 / tmp_c.Points[i].Z;
+                    //    Cast3dto2d[1, 1] = 1 / tmp_c.Points[i].Z;
+                    //    Cast3dto2d[2, 2] = 1 / tmp_c.Points[i].Z;
 
-                    //cube2d.Points[i].X = cube2d.Points[i].X / (cube2d.Points[i].Z);
-                    //cube2d.Points[i].Y = cube2d.Points[i].Y / (cube2d.Points[i].Z);
-                    //cube2d.Points[i].Z = cube2d.Points[i].Z / (cube2d.Points[i].Z);
+                    //    cube2d.Points[i] = MathExtension.MatrixMultiply(Cast3dto2d, tmp_c.Points[i]);
+                    //} else
+                    //{
+                    //    //perform clipping ?
+                    //    cube2d.Points[i] = new Vector3(-350,-350,1);
+                    //}
+
+                    Cast3dto2d[0, 0] = 1 / tmp_c.Points[i].Z;
+                    Cast3dto2d[1, 1] = 1 / tmp_c.Points[i].Z;
+                    Cast3dto2d[2, 2] = 1 / tmp_c.Points[i].Z;
+
+                    cube2d.Points[i] = MathExtension.MatrixMultiply(Cast3dto2d, tmp_c.Points[i]);
+
 
                     //Console.WriteLine($"After {i}:{cube2d.Points[i]}");
 
@@ -190,20 +214,49 @@ namespace VirtualCamera
             Line line = new Line();
             line.Visibility = Visibility.Visible;
             line.Stroke = Brushes.White;
+            // TMP
+            switch (a)
+            {
+                case 3:
+                    //Console.WriteLine($"x:{x}, y:{y}");
+                    line.Stroke = Brushes.Red;
+                    a++;
+                    break;
+                case 6:
+                    //Console.WriteLine($"x:{x}, y:{y}");
+                    line.Stroke = Brushes.Blue;
+                    a++;
+                    break;
+                case 11:
+                    a = 0;
+                    break;
+                default:
+                    a++;
+                    break;
+
+            }
+
+            // Block drawing line if both points are out of camera view
+            if ((c.Points[x].X > 400 && c.Points[y].X > 400) || (c.Points[x].X < -400 && c.Points[y].X <- 400) ||
+                (c.Points[x].Y > 400 && c.Points[y].Y > 400) || (c.Points[x].Y < -400 && c.Points[y].Y < -400))
+            {
+                return;
+            }
+            // Block drawing line if any point is out of camera view
+            //if (c.Points[x].X > 400 || c.Points[y].X > 400 || c.Points[x].Y > 400 || c.Points[y].Y > 400 ||
+            //    c.Points[x].X < -400 || c.Points[y].X < -400 || c.Points[x].Y < -400 || c.Points[y].Y < -400)
+            //{
+            //    return;
+            //}
+
             line.X1 = c.Points[x].X + Cam.FovX;
             line.X2 = c.Points[y].X + Cam.FovX;
             line.Y1 = canvas.Height - (c.Points[x].Y + Cam.FovY);
             line.Y2 = canvas.Height - (c.Points[y].Y + Cam.FovY);
 
+
+            
             canvas.Children.Add(line);
-        }
-
-
-        private void BuildTranslationMatrix()
-        {
-            translationMatrix.M14 = TransX;
-            translationMatrix.M24 = TransY;
-            translationMatrix.M34 = TransZ;
         }
     }
 }
