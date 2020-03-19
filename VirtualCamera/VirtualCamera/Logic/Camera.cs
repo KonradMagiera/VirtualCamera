@@ -7,14 +7,15 @@ namespace VirtualCamera.Logic
     class Camera
     {
         public Matrix4x4 rotationMatrix;
+        //public Matrix4x4 rotationMatrixUpdate;
         public Matrix4x4 translationMatrix;
         public Matrix4x4 scaleMatrix;
-
+        public Matrix4x4 perspectiveMatrix;
         //
         public Matrix4x4 cameraTranslationMatrix;
         //
 
-        public Camera(double screenWidth, double screenHeight, List<Cube> cubes)
+        public Camera(double screenWidth, double screenHeight, List<Line3D> lines)
         {
             RotationStep = 1f;
             TransformStep = 10f;
@@ -27,9 +28,12 @@ namespace VirtualCamera.Logic
             Far = 100f;
             Near = 0.1f;
 
-            AngleX = 0f;
+
+            AngleX = 0f; // probably will be removed with introduction rotation matrices
             AngleY = 0f;
             AngleZ = 0f;
+
+
             TransX = 100f;
             TransY = -80f;
             TransZ = 200f;
@@ -41,17 +45,27 @@ namespace VirtualCamera.Logic
             PosZ = 0f;
             //
 
-            
+            Lines = lines;
 
-            Cubes = cubes;
 
             scaleMatrix = Matrix4x4.Identity;
             rotationMatrix = Matrix4x4.Identity;
             translationMatrix = Matrix4x4.Identity;
             cameraTranslationMatrix = Matrix4x4.Identity;
+
+
+            //rotationMatrixUpdate = Matrix4x4.Identity;
+            //RotationYLeft = BuildRotationYMatrix(-RotationStep);
+            //RotationYRight = BuildRotationYMatrix(RotationStep);
+            //RotationZLeft = BuildRotationZMatrix(-RotationStep);
+            //RotationZRight = BuildRotationZMatrix(RotationStep);
+            //RotationXDown = BuildRotationXMatrix(RotationStep);
+            //RotationXUp = BuildRotationXMatrix(-RotationStep);
+
             BuildRotationMatrix();
             BuildTranslationMatrix();
             BuildScaleMatrix();
+            BuildPerspectiveMatrix();
             //
             BuildTranslationCameraMatrix();
             //
@@ -61,8 +75,16 @@ namespace VirtualCamera.Logic
         public float FovY { get; set; }
         public float Far { get; set; }
         public float Near { get; set; }
-        public List<Cube> Cubes { get; set; }
+        public List<Line3D> Lines { get; set; }
         public float AspectRatio { get; set; }
+
+
+        private Matrix4x4 RotationYLeft { get; set; }
+        private Matrix4x4 RotationYRight { get; set; }
+        private Matrix4x4 RotationXUp { get; set; }
+        private Matrix4x4 RotationXDown { get; set; }
+        private Matrix4x4 RotationZLeft { get; set; }
+        private Matrix4x4 RotationZRight { get; set; }
 
         private float RotationStep { get; set; }
         private float TransformStep { get; set; }
@@ -75,6 +97,7 @@ namespace VirtualCamera.Logic
         private float TransY { get; set; }
         private float TransZ { get; set; }
         private float Scale { get; set; }
+
         //
         private float PosX { get; set; }
         private float PosY { get; set; }
@@ -125,6 +148,82 @@ namespace VirtualCamera.Logic
             translationMatrix.M34 = TransZ;
         }
 
+        private void BuildPerspectiveMatrix()
+        {
+            float angle = MathExtension.ToRadians(5); // decrease - zoomIn/ increase - zoomOut
+            angle = (float)Math.Tan(angle / 2);
+            perspectiveMatrix = new Matrix4x4(1 / (AspectRatio * angle), 0, 0, 0,
+                                          0, 1 / angle, 0, 0,
+                                          0, 0, (-Near - Far) / (Near - Far), (2 * Far * Near) / (Near - Far),
+                                          0, 0, 1, 0);
+
+            //perspectiveMatrix = new Matrix4x4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0);
+
+            //perspectiveMatrix = new Matrix4x4(-1 / (AspectRatio * angle), 0, 0, 0,
+            //                              0, 1 / angle, 0, 0,
+            //                              0, 0, -((Far + Near) / (Far - Near)), -((2 * Far * Near) / (Far - Near)),
+            //                              0, 0, -1, 0);
+
+            //perspectiveMatrix = new Matrix4x4(AspectRatio / (angle), 0, 0, 0,
+            //                              0, 1 / angle, 0, 0,
+            //                              0, 0, (Near + Far) / (-Near + Far), (2 * Far * Near) / (Near - Far),
+            //                              0, 0, 1, 0);
+        }
+
+        private void BuildScaleMatrix()
+        {
+            scaleMatrix.M11 = Scale;
+            scaleMatrix.M22 = Scale;
+            scaleMatrix.M33 = 1;
+            scaleMatrix.M44 = 1;
+        }
+
+
+        //private Matrix4x4 BuildRotationXMatrix(float angle)
+        //{
+        //    Matrix4x4 rotationX = Matrix4x4.Identity;
+        //    float rad = MathExtension.ToRadians(angle);
+        //    float cos = (float)Math.Cos(rad);
+        //    float sin = (float)Math.Sin(rad);
+
+        //    rotationX.M22 = cos;
+        //    rotationX.M23 = sin;
+        //    rotationX.M32 = -sin;
+        //    rotationX.M33 = cos;
+
+        //    return rotationX;
+        //}
+
+        //private Matrix4x4 BuildRotationYMatrix(float angle)
+        //{
+        //    Matrix4x4 rotationY = Matrix4x4.Identity;
+        //    float rad = MathExtension.ToRadians(angle);
+        //    float cos = (float)Math.Cos(rad);
+        //    float sin = (float)Math.Sin(rad);
+
+        //    rotationY.M11 = cos;
+        //    rotationY.M13 = -sin;
+        //    rotationY.M31 = sin;
+        //    rotationY.M33 = cos;
+
+        //    return rotationY;
+        //}
+
+        //private Matrix4x4 BuildRotationZMatrix(float angle)
+        //{
+        //    Matrix4x4 rotationZ = Matrix4x4.Identity;
+        //    float rad = MathExtension.ToRadians(angle);
+        //    float cos = (float)Math.Cos(rad);
+        //    float sin = (float)Math.Sin(rad);
+
+        //    rotationZ.M11 = cos;
+        //    rotationZ.M12 = -sin;
+        //    rotationZ.M21 = sin;
+        //    rotationZ.M22 = cos;
+
+        //    return rotationZ;
+        //}
+
         //
         private void BuildTranslationCameraMatrix()
         {
@@ -134,13 +233,7 @@ namespace VirtualCamera.Logic
         }
         //
 
-        private void BuildScaleMatrix()
-        {
-            scaleMatrix.M11 = Scale;
-            scaleMatrix.M22 = Scale;
-            scaleMatrix.M33 = 1;
-            scaleMatrix.M44 = 1;
-        }
+
 
 
         #region transform
@@ -201,39 +294,62 @@ namespace VirtualCamera.Logic
         {
             AngleX -= RotationStep;
             BuildRotationMatrix();
+            //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationXDown);
         }
 
         public void RotateXUp()
         {
             AngleX += RotationStep;
             BuildRotationMatrix();
+            //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationXUp);
         }
 
         public void RotateYleft()
         {
             AngleY += RotationStep;
             BuildRotationMatrix();
+            //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationYLeft);
         }
 
         public void RotateYRight()
         {
             AngleY -= RotationStep;
             BuildRotationMatrix();
+            //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationYRight);
         }
 
         public void RotateZRight()
         {
             AngleZ += RotationStep;
             BuildRotationMatrix();
+            //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationZRight);
         }
 
         public void RotateZleft()
         {
             AngleZ -= RotationStep;
             BuildRotationMatrix();
+            //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationZLeft);
         }
 
         #endregion
 
+
+        #region zoom
+        public void ZoomIn()
+        {
+            perspectiveMatrix.M11 -= (float)0.1;
+            perspectiveMatrix.M22 -= (float)0.1;
+            perspectiveMatrix.M33 -= (float)0.1;
+        }
+
+
+        public void ZoomOut()
+        {
+            perspectiveMatrix.M11 += (float)0.1;
+            perspectiveMatrix.M22 += (float)0.1;
+            perspectiveMatrix.M33 += (float)0.1;
+        }
+        #endregion
     }
 }

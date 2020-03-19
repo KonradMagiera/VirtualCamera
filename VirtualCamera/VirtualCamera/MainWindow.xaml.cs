@@ -21,7 +21,6 @@ namespace VirtualCamera
     public partial class MainWindow : Window
     {
         private Camera Cam { get; set; }
-        private Matrix4x4 Perspective { get; set; }
         private Matrix3x4 Cast3dto2d { get; set; }
 
         private int a = 0;
@@ -29,105 +28,31 @@ namespace VirtualCamera
         public MainWindow()
         {
             InitializeComponent();
-            List<Cube> cubes = FileHandling.FileReader.ReadFile(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\world.txt");
-            Cam = new Camera(canvas.Width, canvas.Height, cubes);
+            List<Line3D> lines = FileHandling.FileReader.ReadFileLines(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\world.txt");
+
+            Cam = new Camera(canvas.Width, canvas.Height, lines);
 
             Cast3dto2d = new Matrix3x4(1, 0, 0, 0,
                                        0, 1, 0, 0,
                                        0, 0, 1, 0);
 
-            float angle = MathExtension.ToRadians(5); // decrease - zoomIn/ increase - zoomOut
-            angle = (float)Math.Tan(angle / 2);
-            Perspective = new Matrix4x4(1 / (Cam.AspectRatio * angle), 0, 0, 0,
-                                          0, 1 / angle, 0, 0,
-                                          0, 0, (-Cam.Near - Cam.Far) / (Cam.Near - Cam.Far), (2 * Cam.Far * Cam.Near) / (Cam.Near - Cam.Far),
-                                          0, 0, 1, 0);
-
-            //Perspective = new Matrix4x4(-1 / (Cam.AspectRatio * angle), 0, 0, 0,
-            //                              0, 1 / angle, 0, 0,
-            //                              0, 0, -((Cam.Far + Cam.Near) / (Cam.Far - Cam.Near)), -((2 * Cam.Far * Cam.Near) / (Cam.Far - Cam.Near)),
-            //                              0, 0, -1, 0);
-
-            //Perspective = new Matrix4x4(Cam.AspectRatio / (angle), 0, 0, 0,
-            //                              0, 1 / angle, 0, 0,
-            //                              0, 0, (Cam.Near + Cam.Far) / (-Cam.Near + Cam.Far), (2 * Cam.Far * Cam.Near) / (Cam.Near - Cam.Far),
-            //                              0, 0, 1, 0);
-
-
-
-
-            DrawObject();
+            DrawLines();
         }
 
 
 
-        private void DrawObject()
+        private void DrawLines()
         {
             canvas.Children.Clear();
-   
-            foreach (Cube c in Cam.Cubes)
+
+            Matrix4x4 tmp = Matrix4x4.Multiply(Cam.scaleMatrix, Cam.translationMatrix);
+            Matrix4x4 model = Matrix4x4.Multiply(tmp, Cam.rotationMatrix);
+            //List<Line2D> lines2d = new List<Line2D>();
+            foreach (Line3D l in Cam.Lines)
             {
-                Cube tmp_c = new Cube(c);
-                Cube2D cube2d = new Cube2D();
-
-                for (int i = 0; i < 8; i++)
-                {
-                    // Console.WriteLine($"Before {i}:{tmp_c.Points[i]}");
-
-                    // model - world
-
-                    // old translate -> rotate -> scale; rotate orientation in rotate -> translate -> scale
-                    tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.rotationMatrix, tmp_c.Points[i]);  // rotate
-                    tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.translationMatrix, tmp_c.Points[i]); // translate
-                    
-                    tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.scaleMatrix, tmp_c.Points[i]); // scale 
-
-
-                    // world - view 
-                    //tmp_c.Points[i] = MathExtension.MatrixMultiply(Cam.cameraTranslationMatrix, tmp_c.Points[i]);
-
-                    // view - perspective
-                    tmp_c.Points[i] = MathExtension.MatrixMultiply(Perspective, tmp_c.Points[i]); // perspective
-
-                    // TODO clipping algorithm
-                    //if (i == 2)
-                    //{
-                    //    Console.WriteLine($"{tmp_c.Points[i]}");
-                    //    if (0 < tmp_c.Points[i].W)
-                    //    {
-                    //        Console.WriteLine("Widać");
-                    //    }
-                    //    else
-                    //    {
-                    //        Console.WriteLine("Nie widać");
-                    //    }
-                    //}
-                    // perspective3D to perspective2D
-                    //if (tmp_c.Points[i].W > 0)
-                    //{
-                    //    Cast3dto2d[0, 0] = 1 / tmp_c.Points[i].Z;
-                    //    Cast3dto2d[1, 1] = 1 / tmp_c.Points[i].Z;
-                    //    Cast3dto2d[2, 2] = 1 / tmp_c.Points[i].Z;
-
-                    //    cube2d.Points[i] = MathExtension.MatrixMultiply(Cast3dto2d, tmp_c.Points[i]);
-                    //} else
-                    //{
-                    //    //perform clipping ?
-                    //    cube2d.Points[i] = new Vector3(-350,-350,1);
-                    //}
-
-                    Cast3dto2d[0, 0] = 1 / tmp_c.Points[i].Z;
-                    Cast3dto2d[1, 1] = 1 / tmp_c.Points[i].Z;
-                    Cast3dto2d[2, 2] = 1 / tmp_c.Points[i].Z;
-
-                    cube2d.Points[i] = MathExtension.MatrixMultiply(Cast3dto2d, tmp_c.Points[i]);
-
-
-                    //Console.WriteLine($"After {i}:{cube2d.Points[i]}");
-
-                }
-
-                ConnectPoints(cube2d);
+                Line2D tmpLine = ConvertTo2D(l, model);
+                //lines2d.Add(tmpLine);
+                DrawLine(tmpLine);
             }
 
         }
@@ -139,59 +64,59 @@ namespace VirtualCamera
             {
                 case Key.W:
                     Cam.TransformForwards();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.S:
                     Cam.TransformBackwards();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.A:
                     Cam.TransformLeft();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.D:
                     Cam.TransformRight();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.Q:
                     Cam.TransformUp();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.E:
                     Cam.TransformDown();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.U:
                     Cam.RotateZleft();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.O:
                     Cam.RotateZRight();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.I:
                     Cam.RotateXDown();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.K:
                     Cam.RotateXUp();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.J:
                     Cam.RotateYleft();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.L:
                     Cam.RotateYRight();
-                    DrawObject();
+                    DrawLines();
                     break;
                 case Key.Z:
-                    // ZoomIn
-                    Console.WriteLine("ZoomIn");
+                    Cam.ZoomIn();
+                    DrawLines();
                     break;
                 case Key.X:
-                    // ZoomOut
-                    Console.WriteLine("ZoomOut");
+                    Cam.ZoomOut();
+                    DrawLines();
                     break;
                 default:
                     Console.WriteLine(e.Key);
@@ -199,64 +124,68 @@ namespace VirtualCamera
             }
         }
 
-        private void ConnectPoints(Cube2D c)
+
+
+        private Line2D ConvertTo2D(Line3D l, Matrix4x4 model)
         {
-            for (int i = 0; i < 4; i++)
-            {
-                DrawLine(c, i, (i + 1) % 4);
-                DrawLine(c, i + 4, ((i + 1) % 4) + 4);
-                DrawLine(c, i, i + 4);
-            }
+            return new Line2D(CalculatePoint(l.points[0], model), CalculatePoint(l.points[1], model));
         }
 
-        private void DrawLine(Cube2D c, int x, int y)
+
+        private Vector3 CalculatePoint(Vector4 p, Matrix4x4 model)
+        {
+
+            Vector4 point  = MathExtension.MatrixMultiply(model, p); // model
+            point = MathExtension.MatrixMultiply(Cam.perspectiveMatrix, point); // perspective
+
+            Cast3dto2d[0, 0] = 1 / point.Z;
+            Cast3dto2d[1, 1] = 1 / point.Z;
+            Cast3dto2d[2, 2] = 1 / point.Z;
+
+            return MathExtension.MatrixMultiply(Cast3dto2d, point);
+        }
+
+        private void DrawLine(Line2D l)
         {
             Line line = new Line();
             line.Visibility = Visibility.Visible;
             line.Stroke = Brushes.White;
+
             // TMP
-            switch (a)
-            {
-                case 3:
-                    //Console.WriteLine($"x:{x}, y:{y}");
-                    line.Stroke = Brushes.Red;
-                    a++;
-                    break;
-                case 6:
-                    //Console.WriteLine($"x:{x}, y:{y}");
-                    line.Stroke = Brushes.Blue;
-                    a++;
-                    break;
-                case 11:
-                    a = 0;
-                    break;
-                default:
-                    a++;
-                    break;
-
-            }
-
-            // Block drawing line if both points are out of camera view
-            if ((c.Points[x].X > 400 && c.Points[y].X > 400) || (c.Points[x].X < -400 && c.Points[y].X <- 400) ||
-                (c.Points[x].Y > 400 && c.Points[y].Y > 400) || (c.Points[x].Y < -400 && c.Points[y].Y < -400))
-            {
-                return;
-            }
-            // Block drawing line if any point is out of camera view
-            //if (c.Points[x].X > 400 || c.Points[y].X > 400 || c.Points[x].Y > 400 || c.Points[y].Y > 400 ||
-            //    c.Points[x].X < -400 || c.Points[y].X < -400 || c.Points[x].Y < -400 || c.Points[y].Y < -400)
+            //switch (a)
             //{
-            //    return;
+            //    case 3:
+            //        //Console.WriteLine($"x:{x}, y:{y}");
+            //        line.Stroke = Brushes.Red;
+            //        a++;
+            //        break;
+            //    case 6:
+            //        //Console.WriteLine($"x:{x}, y:{y}");
+            //        line.Stroke = Brushes.Blue;
+            //        a++;
+            //        break;
+            //    case 8:
+            //        a++;
+            //        line.Stroke = Brushes.Lime;
+            //        break;
+            //    case 11:
+            //        a = 0;
+            //        break;
+            //    default:
+            //        a++;
+            //        break;
+
             //}
 
-            line.X1 = c.Points[x].X + Cam.FovX;
-            line.X2 = c.Points[y].X + Cam.FovX;
-            line.Y1 = canvas.Height - (c.Points[x].Y + Cam.FovY);
-            line.Y2 = canvas.Height - (c.Points[y].Y + Cam.FovY);
+
+            line.X1 = l.points[0].X + Cam.FovX;
+            line.X2 = l.points[1].X + Cam.FovX;
+            line.Y1 = canvas.Height - (l.points[0].Y + Cam.FovY);
+            line.Y2 = canvas.Height - (l.points[1].Y + Cam.FovY);
 
 
-            
             canvas.Children.Add(line);
         }
+
     }
 }
