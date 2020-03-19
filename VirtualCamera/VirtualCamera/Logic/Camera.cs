@@ -11,8 +11,9 @@ namespace VirtualCamera.Logic
         public Matrix4x4 translationMatrix;
         public Matrix4x4 scaleMatrix;
         public Matrix4x4 perspectiveMatrix;
+
         //
-        public Matrix4x4 cameraTranslationMatrix;
+        //public Matrix4x4 cameraTranslationMatrix;
         //
 
         public Camera(double screenWidth, double screenHeight, List<Line3D> lines)
@@ -20,7 +21,7 @@ namespace VirtualCamera.Logic
             RotationStep = 1f;
             TransformStep = 10f;
             TransformZStep = 2f;
-            ZoomStep = 20f;
+            Zoom = 20f;
 
             FovX = (float)screenWidth / 2;
             FovY = (float)screenHeight / 2;
@@ -40,9 +41,9 @@ namespace VirtualCamera.Logic
             Scale = 20f;
 
             //
-            PosX = 0f;
-            PosY = 0f;
-            PosZ = 0f;
+           // PosX = 0f;
+            //PosY = 0f;
+            //PosZ = 0f;
             //
 
             Lines = lines;
@@ -51,10 +52,11 @@ namespace VirtualCamera.Logic
             scaleMatrix = Matrix4x4.Identity;
             rotationMatrix = Matrix4x4.Identity;
             translationMatrix = Matrix4x4.Identity;
-            cameraTranslationMatrix = Matrix4x4.Identity;
+            Model = Matrix4x4.Identity;
 
-
+            //cameraTranslationMatrix = Matrix4x4.Identity;
             //rotationMatrixUpdate = Matrix4x4.Identity;
+
             //RotationYLeft = BuildRotationYMatrix(-RotationStep);
             //RotationYRight = BuildRotationYMatrix(RotationStep);
             //RotationZLeft = BuildRotationZMatrix(-RotationStep);
@@ -67,7 +69,7 @@ namespace VirtualCamera.Logic
             BuildScaleMatrix();
             BuildPerspectiveMatrix();
             //
-            BuildTranslationCameraMatrix();
+            //BuildTranslationCameraMatrix();
             //
         }
 
@@ -77,19 +79,20 @@ namespace VirtualCamera.Logic
         public float Near { get; set; }
         public List<Line3D> Lines { get; set; }
         public float AspectRatio { get; set; }
+        public Matrix4x4 Model { get; set; }
+        public float Zoom { get; set; }
 
-
-        private Matrix4x4 RotationYLeft { get; set; }
-        private Matrix4x4 RotationYRight { get; set; }
-        private Matrix4x4 RotationXUp { get; set; }
-        private Matrix4x4 RotationXDown { get; set; }
-        private Matrix4x4 RotationZLeft { get; set; }
-        private Matrix4x4 RotationZRight { get; set; }
+        //private Matrix4x4 RotationYLeft { get; set; }
+        //private Matrix4x4 RotationYRight { get; set; }
+        //private Matrix4x4 RotationXUp { get; set; }
+        //private Matrix4x4 RotationXDown { get; set; }
+        //private Matrix4x4 RotationZLeft { get; set; }
+        //private Matrix4x4 RotationZRight { get; set; }
 
         private float RotationStep { get; set; }
         private float TransformStep { get; set; }
         private float TransformZStep { get; set; }
-        private float ZoomStep { get; set; }
+        
         private float AngleX { get; set; } // transform/ rotation/ scale/ camera translation parameters
         private float AngleY { get; set; }
         private float AngleZ { get; set; }
@@ -99,12 +102,22 @@ namespace VirtualCamera.Logic
         private float Scale { get; set; }
 
         //
-        private float PosX { get; set; }
-        private float PosY { get; set; }
-        private float PosZ { get; set; }
+        //private float PosX { get; set; }
+        //private float PosY { get; set; }
+        //private float PosZ { get; set; }
         //
 
         
+        public void BuildModelMatrix()
+        {
+            Matrix4x4 tmp = Matrix4x4.Multiply(scaleMatrix, translationMatrix);
+            Model = Matrix4x4.Multiply(tmp, rotationMatrix);
+        }
+
+        public void ResetModelMatrix()
+        {
+            Model = Matrix4x4.Identity;
+        }
 
         private void BuildRotationMatrix()
         {
@@ -225,12 +238,12 @@ namespace VirtualCamera.Logic
         //}
 
         //
-        private void BuildTranslationCameraMatrix()
-        {
-            cameraTranslationMatrix.M14 = PosX;
-            cameraTranslationMatrix.M24 = PosY;
-            cameraTranslationMatrix.M34 = PosZ;
-        }
+        //private void BuildTranslationCameraMatrix()
+        //{
+        //    cameraTranslationMatrix.M14 = PosX;
+        //    cameraTranslationMatrix.M24 = PosY;
+        //    cameraTranslationMatrix.M34 = PosZ;
+        //}
         //
 
 
@@ -294,6 +307,7 @@ namespace VirtualCamera.Logic
         {
             AngleX -= RotationStep;
             BuildRotationMatrix();
+            
             //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationXDown);
         }
 
@@ -308,6 +322,8 @@ namespace VirtualCamera.Logic
         {
             AngleY += RotationStep;
             BuildRotationMatrix();
+            //rotationMatrix = Matrix4x4.Multiply(rotationMatrix, RotationYLeft);
+            //BuildModelMatrix();
             //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationYLeft);
         }
 
@@ -315,6 +331,8 @@ namespace VirtualCamera.Logic
         {
             AngleY -= RotationStep;
             BuildRotationMatrix();
+            //rotationMatrix = Matrix4x4.Multiply(rotationMatrix, RotationYRight);
+            //BuildModelMatrix();
             //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationYRight);
         }
 
@@ -322,6 +340,7 @@ namespace VirtualCamera.Logic
         {
             AngleZ += RotationStep;
             BuildRotationMatrix();
+            //Model = Matrix4x4.Multiply(Model, RotationZRight);
             //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationZRight);
         }
 
@@ -329,6 +348,7 @@ namespace VirtualCamera.Logic
         {
             AngleZ -= RotationStep;
             BuildRotationMatrix();
+            //Model = Matrix4x4.Multiply(Model, RotationZLeft);
             //rotationMatrixUpdate = Matrix4x4.Multiply(rotationMatrixUpdate, RotationZLeft);
         }
 
@@ -338,17 +358,19 @@ namespace VirtualCamera.Logic
         #region zoom
         public void ZoomIn()
         {
-            perspectiveMatrix.M11 -= (float)0.1;
-            perspectiveMatrix.M22 -= (float)0.1;
-            perspectiveMatrix.M33 -= (float)0.1;
+            Zoom -= (float)0.05;
+            //perspectiveMatrix.M11 -= (float)0.1;
+            //perspectiveMatrix.M22 -= (float)0.1;
+            //perspectiveMatrix.M33 -= (float)0.1;
         }
 
 
         public void ZoomOut()
         {
-            perspectiveMatrix.M11 += (float)0.1;
-            perspectiveMatrix.M22 += (float)0.1;
-            perspectiveMatrix.M33 += (float)0.1;
+            Zoom += (float)0.05;
+            //perspectiveMatrix.M11 += (float)0.1;
+            //perspectiveMatrix.M22 += (float)0.1;
+            //perspectiveMatrix.M33 += (float)0.1;
         }
         #endregion
     }

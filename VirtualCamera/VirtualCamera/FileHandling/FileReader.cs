@@ -8,7 +8,7 @@ namespace VirtualCamera.FileHandling
 {
     class FileReader
     {
-        public static List<Line3D> ReadFileLines(string filename)
+        public static List<Line3D> ReadFileCubeLines(string filename)
         {
             StreamReader sr = new StreamReader(filename);
             List<Line3D> lines = new List<Line3D>();
@@ -42,6 +42,40 @@ namespace VirtualCamera.FileHandling
             return lines;
         }
 
+        public static List<Line3D> ReadFilePyramidLines(string filename)
+        {
+            StreamReader sr = new StreamReader(filename);
+            List<Line3D> lines = new List<Line3D>();
 
+            Vector4[] vectors = new Vector4[5];
+            string line;
+
+
+            while ((line = sr.ReadLine()) != null)
+            {
+                line = line.Trim().Replace("[", "").Replace("]", "");
+                string[] points = line.Split(";");
+
+                for (int i = 0; i < 5; i++)
+                {
+                    string[] p = points[i].Split(",");
+                    float[] coords = new float[]{float.Parse(p[0]),
+                                         float.Parse(p[1]),
+                                         float.Parse(p[2])
+                    };
+                    vectors[i] = new Vector4(coords[0], coords[1], coords[2], 1);
+                }
+                lines.Add(new Line3D(vectors[0], vectors[1]));
+                lines.Add(new Line3D(vectors[0], vectors[4]));
+                lines.Add(new Line3D(vectors[0], vectors[3]));
+                lines.Add(new Line3D(vectors[1], vectors[2]));
+                lines.Add(new Line3D(vectors[1], vectors[4]));
+                lines.Add(new Line3D(vectors[2], vectors[3]));
+                lines.Add(new Line3D(vectors[2], vectors[4]));
+                lines.Add(new Line3D(vectors[3], vectors[4]));
+
+            }
+                return lines;
+        }
     }
 }

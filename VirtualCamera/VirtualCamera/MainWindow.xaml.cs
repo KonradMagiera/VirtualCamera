@@ -1,13 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -28,8 +22,9 @@ namespace VirtualCamera
         public MainWindow()
         {
             InitializeComponent();
-            List<Line3D> lines = FileHandling.FileReader.ReadFileLines(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\world.txt");
-
+            List<Line3D> lines = FileHandling.FileReader.ReadFileCubeLines(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\cubes.txt");
+            List<Line3D> linesPyramid = FileHandling.FileReader.ReadFilePyramidLines(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\pyramid.txt");
+            lines.AddRange(linesPyramid);
             Cam = new Camera(canvas.Width, canvas.Height, lines);
 
             Cast3dto2d = new Matrix3x4(1, 0, 0, 0,
@@ -45,13 +40,11 @@ namespace VirtualCamera
         {
             canvas.Children.Clear();
 
-            Matrix4x4 tmp = Matrix4x4.Multiply(Cam.scaleMatrix, Cam.translationMatrix);
-            Matrix4x4 model = Matrix4x4.Multiply(tmp, Cam.rotationMatrix);
-            //List<Line2D> lines2d = new List<Line2D>();
+            Cam.BuildModelMatrix();
+
             foreach (Line3D l in Cam.Lines)
             {
-                Line2D tmpLine = ConvertTo2D(l, model);
-                //lines2d.Add(tmpLine);
+                Line2D tmpLine = new Line2D(CalculatePoint(l.points[0], Cam.Model), CalculatePoint(l.points[1], Cam.Model));
                 DrawLine(tmpLine);
             }
 
@@ -126,21 +119,15 @@ namespace VirtualCamera
 
 
 
-        private Line2D ConvertTo2D(Line3D l, Matrix4x4 model)
-        {
-            return new Line2D(CalculatePoint(l.points[0], model), CalculatePoint(l.points[1], model));
-        }
-
-
         private Vector3 CalculatePoint(Vector4 p, Matrix4x4 model)
         {
 
             Vector4 point  = MathExtension.MatrixMultiply(model, p); // model
-            point = MathExtension.MatrixMultiply(Cam.perspectiveMatrix, point); // perspective
+            //point = MathExtension.MatrixMultiply(Cam.perspectiveMatrix, point); // perspective
 
-            Cast3dto2d[0, 0] = 1 / point.Z;
-            Cast3dto2d[1, 1] = 1 / point.Z;
-            Cast3dto2d[2, 2] = 1 / point.Z;
+            Cast3dto2d[0, 0] = Cam.Zoom / point.Z;
+            Cast3dto2d[1, 1] = Cam.Zoom / point.Z;
+            Cast3dto2d[2, 2] = Cam.Zoom / point.Z;
 
             return MathExtension.MatrixMultiply(Cast3dto2d, point);
         }

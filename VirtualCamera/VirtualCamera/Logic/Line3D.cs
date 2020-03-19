@@ -14,5 +14,12 @@ namespace VirtualCamera.Logic
                 p2
             };
         }
+
+        public override string ToString()
+        {
+            return points[0].ToString() + " " + points[1].ToString();
+        }
+
+
     }
 }
