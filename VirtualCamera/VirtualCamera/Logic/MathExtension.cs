@@ -20,13 +20,13 @@ namespace VirtualCamera.Logic
             float z = v.X * m.M31 + v.Y * m.M32 + v.Z * m.M33 + v.W * m.M34;
             float w = v.X * m.M41 + v.Y * m.M42 + v.Z * m.M43 + v.W * m.M44;
 
-            //if (w != 1 && w != 0)
-            //{
-            //    x /= w;
-            //    y /= w;
-            //    z /= w;
-            //    w /= w;
-            //}
+            if (w != 1 && w != 0)
+            {
+                x /= w;
+                y /= w;
+                z /= w;
+                w /= w;
+            }
             return new Vector4(x, y, z, w);
         }
 

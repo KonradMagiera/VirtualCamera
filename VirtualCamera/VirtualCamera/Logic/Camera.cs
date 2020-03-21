@@ -21,7 +21,7 @@ namespace VirtualCamera.Logic
             RotationStep = 1f;
             TransformStep = 10f;
             TransformZStep = 2f;
-            Zoom = 20f;
+            FocalLength = 20f;
 
             FovX = (float)screenWidth / 2;
             FovY = (float)screenHeight / 2;
@@ -80,7 +80,7 @@ namespace VirtualCamera.Logic
         public List<Line3D> Lines { get; set; }
         public float AspectRatio { get; set; }
         public Matrix4x4 Model { get; set; }
-        public float Zoom { get; set; }
+        public float FocalLength { get; set; }
 
         //private Matrix4x4 RotationYLeft { get; set; }
         //private Matrix4x4 RotationYRight { get; set; }
@@ -112,6 +112,8 @@ namespace VirtualCamera.Logic
         {
             Matrix4x4 tmp = Matrix4x4.Multiply(scaleMatrix, translationMatrix);
             Model = Matrix4x4.Multiply(tmp, rotationMatrix);
+            //Matrix4x4 tmp = Matrix4x4.Multiply(translationMatrix, rotationMatrix);
+            //Model = Matrix4x4.Multiply(tmp, scaleMatrix); 
         }
 
         public void ResetModelMatrix()
@@ -358,7 +360,7 @@ namespace VirtualCamera.Logic
         #region zoom
         public void ZoomIn()
         {
-            Zoom -= (float)0.05;
+            FocalLength += (float)0.1;
             //perspectiveMatrix.M11 -= (float)0.1;
             //perspectiveMatrix.M22 -= (float)0.1;
             //perspectiveMatrix.M33 -= (float)0.1;
@@ -367,7 +369,12 @@ namespace VirtualCamera.Logic
 
         public void ZoomOut()
         {
-            Zoom += (float)0.05;
+            // zoom only if d is still in front of camera
+            if(FocalLength > 0.1)
+            {
+                FocalLength -= (float)0.1;
+            }
+
             //perspectiveMatrix.M11 += (float)0.1;
             //perspectiveMatrix.M22 += (float)0.1;
             //perspectiveMatrix.M33 += (float)0.1;

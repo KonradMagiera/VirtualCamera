@@ -17,7 +17,7 @@ namespace VirtualCamera
         private Camera Cam { get; set; }
         private Matrix3x4 Cast3dto2d { get; set; }
 
-        private int a = 0;
+        // private int a = 0;
 
         public MainWindow()
         {
@@ -44,8 +44,26 @@ namespace VirtualCamera
 
             foreach (Line3D l in Cam.Lines)
             {
-                Line2D tmpLine = new Line2D(CalculatePoint(l.points[0], Cam.Model), CalculatePoint(l.points[1], Cam.Model));
-                DrawLine(tmpLine);
+                Vector4 p1 = MathExtension.MatrixMultiply(Cam.Model, l.points[0]); // model
+                Vector4 p2 = MathExtension.MatrixMultiply(Cam.Model, l.points[1]); // model
+
+                // drawing with clipping
+                if (isVisible(p1) && isVisible(p2))
+                {
+                    Line2D tmpLine = new Line2D(CastPoint(p1), CastPoint(p2));
+                    DrawLine(tmpLine);
+                }
+                else if (!isVisible(p1) && isVisible(p2))
+                {
+                    DrawLine(ClipLine(p2, p1));
+                    //Console.WriteLine("Nie widać p1");
+                }
+                else if (isVisible(p1) && !isVisible(p2))
+                {
+                    DrawLine(ClipLine(p1, p2));
+                    //Console.WriteLine("Nie widać p2");
+                }
+
             }
 
         }
@@ -117,18 +135,40 @@ namespace VirtualCamera
             }
         }
 
-
-
-        private Vector3 CalculatePoint(Vector4 p, Matrix4x4 model)
+        private bool isVisible(Vector4 point)
         {
+            if (point.Z > 0)
+            {
+                return true;
+            }
+            //Console.WriteLine("point " + point);
+            return false;
+        }
 
-            Vector4 point  = MathExtension.MatrixMultiply(model, p); // model
-            //point = MathExtension.MatrixMultiply(Cam.perspectiveMatrix, point); // perspective
+        private Line2D ClipLine(Vector4 p1, Vector4 p2)
+        {
+            float z1 = p1.Z - p2.Z;
+            float z2 = p1.Z - Cam.FocalLength;
+            float k = z2 / z1;
+            float x = p1.X + (p2.X - p1.X) * k;
+            float y = p1.Y + (p2.Y - p1.Z) * k;
 
-            Cast3dto2d[0, 0] = Cam.Zoom / point.Z;
-            Cast3dto2d[1, 1] = Cam.Zoom / point.Z;
-            Cast3dto2d[2, 2] = Cam.Zoom / point.Z;
+            Vector3 point = new Vector3(x, y, 1);
+            Console.WriteLine(p2);
+            Console.WriteLine(point);
+            return new Line2D(CastPoint(p1), point);
+        }
 
+        private Vector3 CastPoint(Vector4 point)
+        {
+            if (point.Z == 0)
+            {
+                point.Z += (float)0.1;
+            }
+
+            Cast3dto2d[0, 0] = Cam.FocalLength / point.Z;
+            Cast3dto2d[1, 1] = Cam.FocalLength / point.Z;
+            Cast3dto2d[2, 2] = Cam.FocalLength / point.Z;
             return MathExtension.MatrixMultiply(Cast3dto2d, point);
         }
 
@@ -165,6 +205,7 @@ namespace VirtualCamera
             //}
 
 
+            // move (0,0) to middle of the screen
             line.X1 = l.points[0].X + Cam.FovX;
             line.X2 = l.points[1].X + Cam.FovX;
             line.Y1 = canvas.Height - (l.points[0].Y + Cam.FovY);
