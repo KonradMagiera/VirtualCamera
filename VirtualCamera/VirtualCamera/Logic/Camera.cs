@@ -7,7 +7,7 @@ namespace VirtualCamera.Logic
     class Camera
     {
         public Matrix4x4 model;
-
+        public Matrix3x4 castTo2d;
         public Camera(double screenWidth, double screenHeight, List<Line3D> lines)
         {
             RotationStep = 1f;
@@ -24,6 +24,10 @@ namespace VirtualCamera.Logic
             model.M14 = 100f;
             model.M24 = -80f;
             model.M34 = 200f;
+
+            castTo2d = new Matrix3x4(1, 0, 0, 0,
+                                       0, 1, 0, 0,
+                                       0, 0, 1, 0);
         }
 
         public float FovX { get; set; }

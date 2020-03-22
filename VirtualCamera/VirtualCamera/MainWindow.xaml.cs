@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Windows;
@@ -15,22 +16,34 @@ namespace VirtualCamera
     public partial class MainWindow : Window
     {
         private Camera Cam { get; set; }
-        private Matrix3x4 Cast3dto2d { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
-            // TODO file reading from GUI
-            List<Line3D> lines = FileHandling.FileReader.ReadFile(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\lines.txt");
 
-            Cam = new Camera(canvas.Width, canvas.Height, lines);
-
-            // TODO move to Camera
-            Cast3dto2d = new Matrix3x4(1, 0, 0, 0,
-                                       0, 1, 0, 0,
-                                       0, 0, 1, 0);
+            Cam = new Camera(canvas.Width, canvas.Height, new List<Line3D>());
 
             DrawLines();
+        }
+
+        private void LoadFile_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.FileName = "lines";
+            dialog.DefaultExt = ".txt";
+            dialog.Filter = "Text documents (.txt)|*.txt";
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                string filename = dialog.FileName;
+                List<Line3D> lines = FileHandling.FileReader.ReadFile(filename);
+                Cam = new Camera(canvas.Width, canvas.Height, lines);
+                DrawLines();
+            }
+
+
         }
 
         private void DrawLines()
@@ -158,10 +171,10 @@ namespace VirtualCamera
                 point.Z += (float)0.1;
             }
 
-            Cast3dto2d[0, 0] = Cam.FocalLength / point.Z;
-            Cast3dto2d[1, 1] = Cam.FocalLength / point.Z;
-            Cast3dto2d[2, 2] = Cam.FocalLength / point.Z;
-            return MathExtension.MatrixMultiply(Cast3dto2d, point);
+            Cam.castTo2d[0, 0] = Cam.FocalLength / point.Z;
+            Cam.castTo2d[1, 1] = Cam.FocalLength / point.Z;
+            Cam.castTo2d[2, 2] = Cam.FocalLength / point.Z;
+            return MathExtension.MatrixMultiply(Cam.castTo2d, point);
         }
 
         private void DrawLine(Line2D l)
@@ -178,6 +191,5 @@ namespace VirtualCamera
 
             canvas.Children.Add(line);
         }
-
     }
 }

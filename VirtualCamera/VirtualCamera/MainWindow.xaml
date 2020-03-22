@@ -5,14 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VirtualCamera"
         mc:Ignorable="d"
-        Title="MainWindow" Width="1000" ResizeMode="CanResize" PreviewKeyDown="OnKeyDown" Height="839">
+        Title="MainWindow" Width="1020" ResizeMode="CanMinimize" PreviewKeyDown="OnKeyDown" Height="839">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="800"/>
             <ColumnDefinition Width="200"/>
         </Grid.ColumnDefinitions>
         <Canvas x:Name="canvas" Width="800" Height="800" Background="Black" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-        <WrapPanel Width="200" Grid.Column="1" Height="800" Margin="0,0,0,23" VerticalAlignment="Top" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.5" >
+        <WrapPanel Width="220" Grid.Column="1" Height="800" VerticalAlignment="Top" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.5" >
             <Label Content="Instruction" RenderTransformOrigin="0.5,0.5" FontSize="24" Width="200" HorizontalContentAlignment="Center" Margin="0,0,0,16" FontWeight="Bold">
                 <Label.RenderTransform>
                     <TransformGroup>
@@ -33,6 +33,7 @@
             <Label Content="Z - Left/Right: U/O" Width="200" HorizontalContentAlignment="Left" FontWeight="Normal" FontSize="16"/>
             <Label Content="Zoom" Width="200" HorizontalContentAlignment="Center" FontWeight="Bold" FontSize="18"/>
             <Label Content="In/Out: Z/X" Width="200" HorizontalContentAlignment="Left" FontWeight="Normal" FontSize="16"/>
+            <Button Content="Load FIle" FlowDirection="LeftToRight" RenderTransformOrigin="1.489,3.424" Height="31" Width="170" Margin="15,5,15,5" Click="LoadFile_Click" FontSize="16" FontWeight="Normal"/>
         </WrapPanel>
     </Grid>
 </Window>
