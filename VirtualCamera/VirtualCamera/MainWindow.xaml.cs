@@ -17,8 +17,6 @@ namespace VirtualCamera
         private Camera Cam { get; set; }
         private Matrix3x4 Cast3dto2d { get; set; }
 
-        // private int a = 0;
-
         public MainWindow()
         {
             InitializeComponent();
@@ -35,32 +33,29 @@ namespace VirtualCamera
         }
 
 
-
         private void DrawLines()
         {
             canvas.Children.Clear();
 
-            Cam.BuildModelMatrix();
-
             foreach (Line3D l in Cam.Lines)
             {
-                Vector4 p1 = MathExtension.MatrixMultiply(Cam.Model, l.points[0]); // model
-                Vector4 p2 = MathExtension.MatrixMultiply(Cam.Model, l.points[1]); // model
+                l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]); // model
+                l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]); // model
 
-                // drawing with clipping
-                if (isVisible(p1) && isVisible(p2))
+                //drawing with clipping
+                if (isVisible(l.points[0]) && isVisible(l.points[1]))
                 {
-                    Line2D tmpLine = new Line2D(CastPoint(p1), CastPoint(p2));
+                    Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
                     DrawLine(tmpLine);
                 }
-                else if (!isVisible(p1) && isVisible(p2))
+                else if (!isVisible(l.points[0]) && isVisible(l.points[1]))
                 {
-                    DrawLine(ClipLine(p2, p1));
+                    DrawLine(ClipLine(l.points[1], l.points[0]));
                     //Console.WriteLine("Nie widać p1");
                 }
-                else if (isVisible(p1) && !isVisible(p2))
+                else if (isVisible(l.points[0]) && !isVisible(l.points[1]))
                 {
-                    DrawLine(ClipLine(p1, p2));
+                    DrawLine(ClipLine(l.points[0], l.points[1]));
                     //Console.WriteLine("Nie widać p2");
                 }
 
@@ -74,63 +69,61 @@ namespace VirtualCamera
             switch (e.Key)
             {
                 case Key.W:
-                    Cam.TransformForwards();
+                    Cam.Move(0,0,-1);
                     DrawLines();
                     break;
                 case Key.S:
-                    Cam.TransformBackwards();
+                    Cam.Move(0, 0, 1);
                     DrawLines();
                     break;
                 case Key.A:
-                    Cam.TransformLeft();
+                    Cam.Move(1, 0, 0);
                     DrawLines();
                     break;
                 case Key.D:
-                    Cam.TransformRight();
+                    Cam.Move(-1, 0, 0);
                     DrawLines();
                     break;
                 case Key.Q:
-                    Cam.TransformUp();
+                    Cam.Move(0, -1, 0);
                     DrawLines();
                     break;
                 case Key.E:
-                    Cam.TransformDown();
+                    Cam.Move(0, 1, 0);
                     DrawLines();
                     break;
                 case Key.U:
-                    Cam.RotateZleft();
+                    Cam.Rotate(-1, "Z");
                     DrawLines();
                     break;
                 case Key.O:
-                    Cam.RotateZRight();
+                    Cam.Rotate(1, "Z");
                     DrawLines();
                     break;
                 case Key.I:
-                    Cam.RotateXDown();
+                    Cam.Rotate(1, "X");
                     DrawLines();
                     break;
                 case Key.K:
-                    Cam.RotateXUp();
+                    Cam.Rotate(-1, "X");
                     DrawLines();
                     break;
                 case Key.J:
-                    Cam.RotateYleft();
+
+                    Cam.Rotate(-1, "Y");
                     DrawLines();
                     break;
                 case Key.L:
-                    Cam.RotateYRight();
+                    Cam.Rotate(1, "Y");
                     DrawLines();
                     break;
                 case Key.Z:
-                    Cam.ZoomIn();
+                    Cam.Zoom(5);
                     DrawLines();
                     break;
                 case Key.X:
-                    Cam.ZoomOut();
+                    Cam.Zoom(-5);
                     DrawLines();
-                    break;
-                default:
-                    Console.WriteLine(e.Key);
                     break;
             }
         }

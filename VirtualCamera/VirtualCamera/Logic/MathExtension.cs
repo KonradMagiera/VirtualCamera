@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 
 namespace VirtualCamera.Logic
 {
@@ -41,12 +39,7 @@ namespace VirtualCamera.Logic
             float x = m[0, 0] * v.X + m[0, 1] * v.Y + m[0, 2] * v.Z + m[0, 3] * v.W;
             float y = m[1, 0] * v.X + m[1, 1] * v.Y + m[1, 2] * v.Z + m[1, 3] * v.W;
             float w = m[2, 0] * v.X + m[2, 1] * v.Y + m[2, 2] * v.Z + m[2, 3] * v.W;
-            //if (w != 1 && w != 0)
-            //{
-            //    x /= w;
-            //    y /= w;
-            //    w /= w;
-            //}
+
             return new Vector3(x, y, w);
         }
 
