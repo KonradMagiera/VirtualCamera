@@ -19,6 +19,7 @@ namespace VirtualCamera.Logic
 
             Lines = lines;
 
+            // Translate to  center objects - only for current files
             model = Matrix4x4.Identity;
             model.M14 = 100f;
             model.M24 = -80f;
@@ -31,8 +32,8 @@ namespace VirtualCamera.Logic
         public float FocalLength { get; set; }
         private float RotationStep { get; set; }
         private float TransformStep { get; set; }
-        
 
+        #region rotation matrices
         private Matrix4x4 BuildRotationXMatrix(float angle)
         {
             Matrix4x4 rotationX = Matrix4x4.Identity;
@@ -41,8 +42,8 @@ namespace VirtualCamera.Logic
             float sin = (float)Math.Sin(rad);
 
             rotationX.M22 = cos;
-            rotationX.M23 = sin;
-            rotationX.M32 = -sin;
+            rotationX.M23 = -sin;
+            rotationX.M32 = sin;
             rotationX.M33 = cos;
 
             return rotationX;
@@ -56,8 +57,8 @@ namespace VirtualCamera.Logic
             float sin = (float)Math.Sin(rad);
 
             rotationY.M11 = cos;
-            rotationY.M13 = -sin;
-            rotationY.M31 = sin;
+            rotationY.M13 = sin;
+            rotationY.M31 = -sin;
             rotationY.M33 = cos;
 
             return rotationY;
@@ -77,6 +78,8 @@ namespace VirtualCamera.Logic
 
             return rotationZ;
         }
+
+        #endregion
 
         #region operations
 

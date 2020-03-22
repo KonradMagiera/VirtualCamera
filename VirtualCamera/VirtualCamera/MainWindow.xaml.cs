@@ -20,11 +20,12 @@ namespace VirtualCamera
         public MainWindow()
         {
             InitializeComponent();
-            List<Line3D> lines = FileHandling.FileReader.ReadFileCubeLines(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\cubes.txt");
-            List<Line3D> linesPyramid = FileHandling.FileReader.ReadFilePyramidLines(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\pyramid.txt");
-            lines.AddRange(linesPyramid);
+            // TODO file reading from GUI
+            List<Line3D> lines = FileHandling.FileReader.ReadFile(@"D:\Polibuda\Semestr VI\Grafika\Projekt\VirtualCamera\VirtualCamera\lines.txt");
+
             Cam = new Camera(canvas.Width, canvas.Height, lines);
 
+            // TODO move to Camera
             Cast3dto2d = new Matrix3x4(1, 0, 0, 0,
                                        0, 1, 0, 0,
                                        0, 0, 1, 0);
@@ -32,17 +33,16 @@ namespace VirtualCamera
             DrawLines();
         }
 
-
         private void DrawLines()
         {
             canvas.Children.Clear();
 
             foreach (Line3D l in Cam.Lines)
             {
-                l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]); // model
-                l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]); // model
+                l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]);
+                l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]);
 
-                //drawing with clipping
+                //drawing with clipping TODO
                 if (isVisible(l.points[0]) && isVisible(l.points[1]))
                 {
                     Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
@@ -101,20 +101,19 @@ namespace VirtualCamera
                     DrawLines();
                     break;
                 case Key.I:
-                    Cam.Rotate(1, "X");
-                    DrawLines();
-                    break;
-                case Key.K:
                     Cam.Rotate(-1, "X");
                     DrawLines();
                     break;
+                case Key.K:
+                    Cam.Rotate(1, "X");
+                    DrawLines();
+                    break;
                 case Key.J:
-
-                    Cam.Rotate(-1, "Y");
+                    Cam.Rotate(1, "Y");
                     DrawLines();
                     break;
                 case Key.L:
-                    Cam.Rotate(1, "Y");
+                    Cam.Rotate(-1, "Y");
                     DrawLines();
                     break;
                 case Key.Z:
@@ -171,39 +170,11 @@ namespace VirtualCamera
             line.Visibility = Visibility.Visible;
             line.Stroke = Brushes.White;
 
-            // TMP
-            //switch (a)
-            //{
-            //    case 3:
-            //        //Console.WriteLine($"x:{x}, y:{y}");
-            //        line.Stroke = Brushes.Red;
-            //        a++;
-            //        break;
-            //    case 6:
-            //        //Console.WriteLine($"x:{x}, y:{y}");
-            //        line.Stroke = Brushes.Blue;
-            //        a++;
-            //        break;
-            //    case 8:
-            //        a++;
-            //        line.Stroke = Brushes.Lime;
-            //        break;
-            //    case 11:
-            //        a = 0;
-            //        break;
-            //    default:
-            //        a++;
-            //        break;
-
-            //}
-
-
             // move (0,0) to middle of the screen
             line.X1 = l.points[0].X + Cam.FovX;
             line.X2 = l.points[1].X + Cam.FovX;
             line.Y1 = canvas.Height - (l.points[0].Y + Cam.FovY);
             line.Y2 = canvas.Height - (l.points[1].Y + Cam.FovY);
-
 
             canvas.Children.Add(line);
         }
