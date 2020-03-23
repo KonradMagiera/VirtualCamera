@@ -54,28 +54,36 @@ namespace VirtualCamera
             {
                 l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]);
                 l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]);
+                
 
-                //drawing with clipping TODO
-                if (isVisible(l.points[0]) && isVisible(l.points[1]))
+                //drawing with clipping
+                if (!isVisible(l.points[0]) && !isVisible(l.points[1]))
                 {
-                    Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
-                    DrawLine(tmpLine);
+                    continue;
                 }
-                else if (!isVisible(l.points[0]) && isVisible(l.points[1]))
-                {
-                    DrawLine(ClipLine(l.points[1], l.points[0]));
-                    //Console.WriteLine("Nie widać p1");
-                }
-                else if (isVisible(l.points[0]) && !isVisible(l.points[1]))
-                {
-                    DrawLine(ClipLine(l.points[0], l.points[1]));
-                    //Console.WriteLine("Nie widać p2");
-                }
+
+                Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
+                DrawLine(tmpLine);
+
+                //if (isVisible(l.points[0]) && isVisible(l.points[1]))
+                //{
+                //    Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
+                //    DrawLine(tmpLine);
+                //}
+                //else if (!isVisible(l.points[0]) && isVisible(l.points[1]))
+                //{
+                //    DrawLine(ClipLine(l.points[1], l.points[0]));
+                //    //Console.WriteLine("Nie widać p1");
+                //}
+                //else if (isVisible(l.points[0]) && !isVisible(l.points[1]))
+                //{
+                //    DrawLine(ClipLine(l.points[0], l.points[1]));
+                //    //Console.WriteLine("Nie widać p2");
+                //}
 
             }
 
         }
-
 
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -146,7 +154,7 @@ namespace VirtualCamera
             {
                 return true;
             }
-            //Console.WriteLine("point " + point);
+
             return false;
         }
 
@@ -166,9 +174,10 @@ namespace VirtualCamera
 
         private Vector3 CastPoint(Vector4 point)
         {
-            if (point.Z == 0)
+            // very simplified clipping Z <= 0 --> Z = 0.1
+            if (point.Z <= 0)
             {
-                point.Z += (float)0.1;
+                point.Z = (float)0.1;
             }
 
             Cam.castTo2d[0, 0] = Cam.FocalLength / point.Z;

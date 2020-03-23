@@ -43,7 +43,6 @@ namespace VirtualCamera.Logic
             return new Vector3(x, y, w);
         }
 
-
         /// <summary>
         /// Convert degrees to radians.
         /// </summary>
