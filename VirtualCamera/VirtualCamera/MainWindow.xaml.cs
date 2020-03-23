@@ -54,32 +54,30 @@ namespace VirtualCamera
             {
                 l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]);
                 l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]);
-                
+
 
                 //drawing with clipping
-                if (!isVisible(l.points[0]) && !isVisible(l.points[1]))
+                //if (!isVisible(l.points[0]) && !isVisible(l.points[1]))
+                //{
+                //    continue;
+                //}
+
+                //Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
+                //DrawLine(tmpLine);
+
+                if (IsPointVisible(l.points[0]) && IsPointVisible(l.points[1]))
                 {
-                    continue;
+                    Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
+                    DrawLine(tmpLine);
                 }
-
-                Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
-                DrawLine(tmpLine);
-
-                //if (isVisible(l.points[0]) && isVisible(l.points[1]))
-                //{
-                //    Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
-                //    DrawLine(tmpLine);
-                //}
-                //else if (!isVisible(l.points[0]) && isVisible(l.points[1]))
-                //{
-                //    DrawLine(ClipLine(l.points[1], l.points[0]));
-                //    //Console.WriteLine("Nie widać p1");
-                //}
-                //else if (isVisible(l.points[0]) && !isVisible(l.points[1]))
-                //{
-                //    DrawLine(ClipLine(l.points[0], l.points[1]));
-                //    //Console.WriteLine("Nie widać p2");
-                //}
+                else if (!IsPointVisible(l.points[0]) && IsPointVisible(l.points[1]))
+                {
+                    DrawLine(PlaneLineIntersection(l.points[1], l.points[0]));
+                }
+                else if (IsPointVisible(l.points[0]) && !IsPointVisible(l.points[1]))
+                {
+                    DrawLine(PlaneLineIntersection(l.points[0], l.points[1]));
+                }
 
             }
 
@@ -90,7 +88,7 @@ namespace VirtualCamera
             switch (e.Key)
             {
                 case Key.W:
-                    Cam.Move(0,0,-1);
+                    Cam.Move(0, 0, -1);
                     DrawLines();
                     break;
                 case Key.S:
@@ -148,9 +146,9 @@ namespace VirtualCamera
             }
         }
 
-        private bool isVisible(Vector4 point)
+        private bool IsPointVisible(Vector4 point)
         {
-            if (point.Z > 0)
+            if (point.Z > 200)
             {
                 return true;
             }
@@ -158,19 +156,28 @@ namespace VirtualCamera
             return false;
         }
 
-        private Line2D ClipLine(Vector4 p1, Vector4 p2)
+        private Line2D PlaneLineIntersection(Vector4 p1, Vector4 p2)
         {
-            float z1 = p1.Z - p2.Z;
-            float z2 = p1.Z - Cam.FocalLength;
-            float k = z2 / z1;
-            float x = p1.X + (p2.X - p1.X) * k;
-            float y = p1.Y + (p2.Y - p1.Z) * k;
+            Vector4 plane0 = new Vector4(-20, 20, 200, 1);
+            Vector4 plane1 = new Vector4(20, -20, 200, 1);
+            Vector4 plane2 = new Vector4(1, 3, 200, 1);
 
-            Vector3 point = new Vector3(x, y, 1);
-            Console.WriteLine(p2);
-            Console.WriteLine(point);
-            return new Line2D(CastPoint(p1), point);
+            Vector4 plane02 = Vector4.Subtract(plane2, plane0);
+            Vector4 plane01 = Vector4.Subtract(plane1, plane0);
+
+            float dotProduct = Vector4.Dot(plane01, plane02);
+            Vector4 substract = Vector4.Subtract(p1, plane0);
+            Vector4 top = Vector4.Multiply(dotProduct, substract);
+
+            Vector4 points = Vector4.Subtract(p2, p1);
+            Vector4 bottom = Vector4.Multiply(-points, dotProduct);
+            Vector4 t = Vector4.Divide(top, bottom);
+
+            Vector4 intersect = p1 + points * t.Z;
+            Console.WriteLine(intersect);
+            return new Line2D(CastPoint(p1), CastPoint(intersect) );
         }
+
 
         private Vector3 CastPoint(Vector4 point)
         {
