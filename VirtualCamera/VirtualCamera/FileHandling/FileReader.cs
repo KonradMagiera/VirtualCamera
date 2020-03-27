@@ -8,6 +8,11 @@ namespace VirtualCamera.FileHandling
 {
     class FileReader
     {
+        /// <summary>
+        /// Read lines form input file.
+        /// </summary>
+        /// <param name="filename">Path to file</param>
+        /// <returns>List of read lines</returns>
         public static List<Line3D> ReadFile(string filename)
         {
             StreamReader sr = new StreamReader(filename);

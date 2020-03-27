@@ -1,5 +1,4 @@
 ﻿using Microsoft.Win32;
-using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Windows;
@@ -10,9 +9,6 @@ using VirtualCamera.Logic;
 
 namespace VirtualCamera
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private Camera Cam { get; set; }
@@ -43,43 +39,6 @@ namespace VirtualCamera
                 DrawLines();
             }
 
-
-        }
-
-        private void DrawLines()
-        {
-            canvas.Children.Clear();
-
-            foreach (Line3D l in Cam.Lines)
-            {
-                l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]);
-                l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]);
-
-
-                //drawing with clipping
-                //if (!isVisible(l.points[0]) && !isVisible(l.points[1]))
-                //{
-                //    continue;
-                //}
-
-                //Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
-                //DrawLine(tmpLine);
-
-                if (IsPointVisible(l.points[0]) && IsPointVisible(l.points[1]))
-                {
-                    Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
-                    DrawLine(tmpLine);
-                }
-                else if (!IsPointVisible(l.points[0]) && IsPointVisible(l.points[1]))
-                {
-                    DrawLine(PlaneLineIntersection(l.points[1], l.points[0]));
-                }
-                else if (IsPointVisible(l.points[0]) && !IsPointVisible(l.points[1]))
-                {
-                    DrawLine(PlaneLineIntersection(l.points[0], l.points[1]));
-                }
-
-            }
 
         }
 
@@ -143,12 +102,53 @@ namespace VirtualCamera
                     Cam.Zoom(-5);
                     DrawLines();
                     break;
+                case Key.C:
+                    Cam.MoveIntersectionPlane(-5);
+                    DrawLines();
+                    break;
+                case Key.V:
+                    Cam.MoveIntersectionPlane(5);
+                    DrawLines();
+                    break;
             }
         }
 
+        /// <summary>
+        /// Calculate points and draw on canvas.
+        /// </summary>
+        private void DrawLines()
+        {
+            canvas.Children.Clear();
+
+            foreach (Line3D l in Cam.Lines)
+            {
+                l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]);
+                l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]);
+
+
+                if (IsPointVisible(l.points[0]) && IsPointVisible(l.points[1]))
+                {
+                    Line2D tmpLine = new Line2D(CastPoint(l.points[0]), CastPoint(l.points[1]));
+                    DrawLine(tmpLine);
+                }
+                else if (!IsPointVisible(l.points[0]) && IsPointVisible(l.points[1]))
+                {
+                    DrawLine(PlaneLineIntersection(l.points[1], l.points[0]));
+                }
+                else if (IsPointVisible(l.points[0]) && !IsPointVisible(l.points[1]))
+                {
+                    DrawLine(PlaneLineIntersection(l.points[0], l.points[1]));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks if point is in front of intersection point.
+        /// </summary>
+        /// <param name="point">Vector4 to be checked</param>
         private bool IsPointVisible(Vector4 point)
         {
-            if (point.Z > 200)
+            if (point.Z > Cam.IntersectionPlaneDistance)
             {
                 return true;
             }
@@ -156,32 +156,41 @@ namespace VirtualCamera
             return false;
         }
 
+        /// <summary>
+        /// Find Line3D-Plane intersection point.
+        /// </summary>
+        /// <param name="p1">Visible point</param>
+        /// <param name="p2">Hidden point</param>
+        /// <returns>Line2D with casted: point p1 and intersection point.</returns>
         private Line2D PlaneLineIntersection(Vector4 p1, Vector4 p2)
         {
-            Vector4 plane0 = new Vector4(-20, 20, 200, 1);
-            Vector4 plane1 = new Vector4(20, -20, 200, 1);
-            Vector4 plane2 = new Vector4(1, 3, 200, 1);
+            Vector4 plane0 = new Vector4(-20, 20, Cam.IntersectionPlaneDistance, 1);
+            Vector4 plane1 = new Vector4(20, -20, Cam.IntersectionPlaneDistance, 1);
+            Vector4 plane2 = new Vector4(1, 3, Cam.IntersectionPlaneDistance, 1);
 
             Vector4 plane02 = Vector4.Subtract(plane2, plane0);
             Vector4 plane01 = Vector4.Subtract(plane1, plane0);
-
             float dotProduct = Vector4.Dot(plane01, plane02);
+
             Vector4 substract = Vector4.Subtract(p1, plane0);
             Vector4 top = Vector4.Multiply(dotProduct, substract);
 
             Vector4 points = Vector4.Subtract(p2, p1);
             Vector4 bottom = Vector4.Multiply(-points, dotProduct);
-            Vector4 t = Vector4.Divide(top, bottom);
 
+            Vector4 t = Vector4.Divide(top, bottom);
             Vector4 intersect = p1 + points * t.Z;
-            Console.WriteLine(intersect);
-            return new Line2D(CastPoint(p1), CastPoint(intersect) );
+
+            return new Line2D(CastPoint(p1), CastPoint(intersect));
         }
 
-
+        /// <summary>
+        /// Cast 3D point to 2D.
+        /// </summary>
+        /// <param name="point">Vector4 in homogeneous coordinates</param>
+        /// <returns>Vector3 with homogeneous coordinates.</returns>
         private Vector3 CastPoint(Vector4 point)
         {
-            // very simplified clipping Z <= 0 --> Z = 0.1
             if (point.Z <= 0)
             {
                 point.Z = (float)0.1;
@@ -190,20 +199,26 @@ namespace VirtualCamera
             Cam.castTo2d[0, 0] = Cam.FocalLength / point.Z;
             Cam.castTo2d[1, 1] = Cam.FocalLength / point.Z;
             Cam.castTo2d[2, 2] = Cam.FocalLength / point.Z;
+
             return MathExtension.MatrixMultiply(Cam.castTo2d, point);
         }
 
+        /// <summary>
+        /// Draws Line on canvas from given Line2D. Moves point(0,0) to the middle.
+        /// </summary>
+        /// <param name="l">Line2D to be drawn</param>
         private void DrawLine(Line2D l)
         {
-            Line line = new Line();
-            line.Visibility = Visibility.Visible;
-            line.Stroke = Brushes.White;
+            Line line = new Line
+            {
+                Visibility = Visibility.Visible,
+                Stroke = Brushes.White,
 
-            // move (0,0) to middle of the screen
-            line.X1 = l.points[0].X + Cam.FovX;
-            line.X2 = l.points[1].X + Cam.FovX;
-            line.Y1 = canvas.Height - (l.points[0].Y + Cam.FovY);
-            line.Y2 = canvas.Height - (l.points[1].Y + Cam.FovY);
+                X1 = l.points[0].X + Cam.FovX,
+                X2 = l.points[1].X + Cam.FovX,
+                Y1 = canvas.Height - (l.points[0].Y + Cam.FovY),
+                Y2 = canvas.Height - (l.points[1].Y + Cam.FovY)
+            };
 
             canvas.Children.Add(line);
         }

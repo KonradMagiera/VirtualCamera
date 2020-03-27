@@ -9,7 +9,6 @@ namespace VirtualCamera.Logic
     {
         public Vector3[] points;
 
-
         public Line2D()
         {
             points = new Vector3[2]

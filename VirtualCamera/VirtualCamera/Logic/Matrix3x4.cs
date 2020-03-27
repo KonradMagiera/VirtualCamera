@@ -25,25 +25,25 @@ namespace VirtualCamera.Logic
 
         }
 
-
+        /// <summary>
+        /// create operator [,] for class 
+        /// </summary>
         public float this[int row, int col]
         {
             get { return matrix[row, col]; }
             set { matrix[row, col] = value; }
         }
 
-
-
         public override string ToString()
         {
             StringBuilder s = new StringBuilder();
             s.Append("{ ");
-            for(int row = 0; row < matrix.GetLength(0); row++)
+            for (int row = 0; row < matrix.GetLength(0); row++)
             {
                 s.Append("{ ");
-                for(int col = 0; col < matrix.GetLength(1); col++)
+                for (int col = 0; col < matrix.GetLength(1); col++)
                 {
-                    s.Append($"M{row+1}{col+1}:{matrix[row,col]} ");
+                    s.Append($"M{row + 1}{col + 1}:{matrix[row, col]} ");
                 }
                 s.Append("}");
             }

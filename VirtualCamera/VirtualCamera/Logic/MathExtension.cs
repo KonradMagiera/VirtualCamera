@@ -10,7 +10,7 @@ namespace VirtualCamera.Logic
         /// </summary>
         /// <param name="m">Matrix4x4</param>
         /// <param name="v">Vector4</param>
-        /// <returns>Resulting Vector4.</returns>
+        /// <returns>Normalized Vector4.</returns>
         public static Vector4 MatrixMultiply(Matrix4x4 m, Vector4 v)
         {
             float x = v.X * m.M11 + v.Y * m.M12 + v.Z * m.M13 + v.W * m.M14;
@@ -33,7 +33,7 @@ namespace VirtualCamera.Logic
         /// </summary>
         /// <param name="m">Matrix 3 rows 4 cols.</param>
         /// <param name="v">Vector of size 4</param>
-        /// <returns>Resultin Vector3.</returns>
+        /// <returns>Vector3.</returns>
         public static Vector3 MatrixMultiply(Matrix3x4 m, Vector4 v)
         {
             float x = m[0, 0] * v.X + m[0, 1] * v.Y + m[0, 2] * v.Z + m[0, 3] * v.W;
