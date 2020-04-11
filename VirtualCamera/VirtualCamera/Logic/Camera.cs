@@ -11,35 +11,51 @@ namespace VirtualCamera.Logic
 
         public Camera(double screenWidth, double screenHeight, List<Line3D> lines)
         {
-            RotationStep = 1f;
-            TransformStep = 10f;
-            FocalLength = 400f;
-
-            FovX = (float)screenWidth / 2;
-            FovY = (float)screenHeight / 2;
-            IntersectionPlaneDistance = 6f;
-
-            Lines = lines;
+            SetUp((float)screenWidth, (float)screenHeight);
 
             // Translate to  center objects - only for default file lines.txt
-            model = Matrix4x4.Identity;
             model.M14 = 100f;
             model.M24 = -80f;
             model.M34 = 200f;
 
-            castTo2d = new Matrix3x4(1, 0, 0, 0,
-                                     0, 1, 0, 0,
-                                     0, 0, 1, 0);
+            Lines = lines;
         }
+
+        public Camera(double screenWidth, double screenHeight, List<Polygon> polygons)
+        {
+            SetUp((float)screenWidth, (float)screenHeight);
+            Polygons = polygons;
+        }
+
 
         public float FovX { get; set; }
         public float FovY { get; set; }
         public float IntersectionPlaneDistance { get; set; }
         public List<Line3D> Lines { get; set; }
+        public List<Polygon> Polygons { get; set; }
         public float FocalLength { get; set; }
+
         private float RotationStep { get; set; }
         private float TransformStep { get; set; }
         
+
+
+        private void SetUp(float screenWidth, float screenHeight)
+        {
+            RotationStep = 1f;
+            TransformStep = 10f;
+            FocalLength = 400f;
+
+            FovX = screenWidth / 2;
+            FovY = screenHeight / 2;
+            IntersectionPlaneDistance = 6f;
+
+            model = Matrix4x4.Identity;
+            castTo2d = new Matrix3x4(1, 0, 0, 0,
+                                     0, 1, 0, 0,
+                                     0, 0, 1, 0);
+        }
+
 
         #region rotation matrices
 
@@ -166,6 +182,11 @@ namespace VirtualCamera.Logic
             {
                 IntersectionPlaneDistance += a;
             }
+        }
+
+        public void ResetModel()
+        {
+            model = Matrix4x4.Identity;
         }
 
         #endregion

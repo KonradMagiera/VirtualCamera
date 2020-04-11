@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Windows;
@@ -12,17 +13,17 @@ namespace VirtualCamera
     public partial class MainWindow : Window
     {
         private Camera Cam { get; set; }
+        private bool Clipping { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
 
             Cam = new Camera(canvas.Width, canvas.Height, new List<Line3D>());
-
-            DrawLines();
+            Clipping = true;
         }
 
-        private void LoadFile_Click(object sender, RoutedEventArgs e)
+        private void LoadLines_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.FileName = "lines";
@@ -36,10 +37,33 @@ namespace VirtualCamera
                 string filename = dialog.FileName;
                 List<Line3D> lines = FileHandling.FileReader.ReadFile(filename);
                 Cam = new Camera(canvas.Width, canvas.Height, lines);
+
+                Clipping = true;
+
                 DrawLines();
             }
 
 
+        }
+
+        private void LoadPolygons_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.FileName = "lines";
+            dialog.DefaultExt = ".txt";
+            dialog.Filter = "Text documents (.txt)|*.txt";
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                string filename = dialog.FileName;
+                List<Logic.Polygon> polygons = FileHandling.FileReader.ReadPolygons(filename);
+                Cam = new Camera(canvas.Width, canvas.Height, polygons);
+
+                Clipping = false;
+                DrawLines();
+            }
         }
 
         private void OnKeyDown(object sender, KeyEventArgs e)
@@ -110,6 +134,11 @@ namespace VirtualCamera
                     Cam.MoveIntersectionPlane(5);
                     DrawLines();
                     break;
+                    //case Key.B:
+                    //    Clipping = !Clipping;
+                    //    Cam.ResetModel();
+                    //    DrawLines();
+                    //    break;
             }
         }
 
@@ -120,11 +149,23 @@ namespace VirtualCamera
         {
             canvas.Children.Clear();
 
+            if (Clipping && Cam.Lines != null)
+            {
+                DrawWithClipping(); // Line3D
+            }
+            else if (Cam.Polygons != null)
+            {
+                DrawWithPainterAlgorithm(); // Polygons
+            }
+
+        }
+
+        private void DrawWithClipping()
+        {
             foreach (Line3D l in Cam.Lines)
             {
                 l.points[0] = MathExtension.MatrixMultiply(Cam.model, l.points[0]);
                 l.points[1] = MathExtension.MatrixMultiply(Cam.model, l.points[1]);
-
 
                 if (IsPointVisible(l.points[0]) && IsPointVisible(l.points[1]))
                 {
@@ -139,6 +180,39 @@ namespace VirtualCamera
                 {
                     DrawLine(PlaneLineIntersection(l.points[0], l.points[1]));
                 }
+            }
+        }
+
+        private void DrawWithPainterAlgorithm()
+        {
+            foreach (Logic.Polygon p in Cam.Polygons)
+            {
+                for (int i = 0; i < p.Points.Count; i++)
+                {
+                    p.Points[i] = MathExtension.MatrixMultiply(Cam.model, p.Points[i]);
+                }
+                p.UpdatePolygonDepth();
+            }
+
+            Cam.Polygons.Sort();
+
+            foreach (Logic.Polygon p in Cam.Polygons)
+            {
+
+                PointCollection myPointCollection = new PointCollection();
+                foreach(Vector4 v in p.Points)
+                {
+                    Vector3 tmp = CastPoint(v);
+                    myPointCollection.Add(new Point(tmp.X + Cam.FovX, canvas.Height - (tmp.Y + Cam.FovY)));
+                }
+
+                System.Windows.Shapes.Polygon wpfPolygon = new System.Windows.Shapes.Polygon
+                {
+                    Stroke = Brushes.White,
+                    Fill = new SolidColorBrush(Color.FromArgb(255, (byte)p.RGB[0], (byte)p.RGB[1], (byte)p.RGB[2])),
+                    Points = myPointCollection
+                };
+                canvas.Children.Add(wpfPolygon);
             }
         }
 
@@ -222,5 +296,8 @@ namespace VirtualCamera
 
             canvas.Children.Add(line);
         }
+
+
+
     }
 }
